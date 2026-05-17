@@ -48,6 +48,8 @@ private:
 
     void set_text_size(int size);
 
+    void update_cursor_position();
+
     void open_file();
     void save_file();
     void save_file_as();
@@ -74,7 +76,6 @@ private:
 
     spell_checker *checker{nullptr};
 
-    // Color button
     QAction *color_action{nullptr};
 };
 
