@@ -83,8 +83,9 @@ main_window::main_window() {
 
     connect(editor, &QTextEdit::textChanged, this, &main_window::update_word_and_line_count);
     update_word_and_line_count();
-    connect(editor, &QTextEdit::cursorPositionChanged, this, &main_window::update_cursor_position);
+    connect(editor, &QTextEdit::textChanged, this, [this]() {
     update_cursor_position();
+});
 }
 
 main_window::~main_window() = default;
@@ -440,22 +441,24 @@ void main_window::update_title() {
 
 void main_window::update_cursor_position() {
     QTextCursor cursor = editor->textCursor();
-    int line = cursor.blockNumber() + 1;
-    int column = cursor.columnNumber() + 1;
 
-    QString position_text = QString("Line: %1, Column: %2").arg(line).arg(column);
+    int line = cursor.blockNumber() + 1;
+
+    int col = cursor.positionInBlock() + 1;
+
+    QString position_text = QString("Ln %1, Col %2").arg(line).arg(col);
 
     QString text = editor->toPlainText();
 
     int line_count = 0;
-    for (QChar ch: text) {
+    for (QChar ch : text) {
         if (ch == '\n') line_count++;
     }
     if (!text.isEmpty() && !text.endsWith('\n')) line_count++;
 
     int word_count = 0;
     bool in_word = false;
-    for (QChar ch: text) {
+    for (QChar ch : text) {
         if (ch.isLetterOrNumber()) {
             if (!in_word) {
                 word_count++;
@@ -467,12 +470,11 @@ void main_window::update_cursor_position() {
     }
 
     QString status = QString("%1  |  Words: %2  Lines: %3")
-            .arg(position_text)
-            .arg(word_count)
-            .arg(line_count);
+                         .arg(position_text)
+                         .arg(word_count)
+                         .arg(line_count);
     statusBar()->showMessage(status);
 }
-
 void main_window::update_word_and_line_count() {
     QString text = editor->toPlainText();
 
