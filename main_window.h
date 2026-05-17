@@ -47,7 +47,6 @@ private:
     void set_alignment_right();
 
     void set_text_size(int size);
-    void show_text_size_menu();
 
     void open_file();
     void save_file();

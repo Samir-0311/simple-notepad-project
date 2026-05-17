@@ -47,10 +47,8 @@ main_window::main_window() {
     transforms.push_back(std::make_unique<sentence_case_transform>());
     transforms.push_back(std::make_unique<swap_case_transform>());
 
-    // Create spell checker (highlighter)
     checker = new spell_checker(editor->document());
 
-    // Load dictionary - try multiple paths
     std::vector<std::string> paths = {
         "data/words.txt",
         "../data/words.txt",
@@ -72,7 +70,6 @@ main_window::main_window() {
         qDebug() << "Failed to load dictionary from any path";
     }
 
-    // Enable custom context menu
     editor->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(editor, &QTextEdit::customContextMenuRequested, this, &main_window::show_context_menu);
 
@@ -173,8 +170,7 @@ void main_window::set_alignment_right() {
     editor->setAlignment(Qt::AlignRight);
 }
 
-void main_window::set_text_size(int size)
-{
+void main_window::set_text_size(int size) {
     QTextCharFormat format;
     format.setFontPointSize(size);
 
@@ -185,52 +181,10 @@ void main_window::set_text_size(int size)
     }
 }
 
-void main_window::show_text_size_menu()
-{
-    QMenu size_menu;
-
-    for (int size = 1; size <= 10; ++size) {
-        QAction *action = size_menu.addAction(QString::number(size));
-        connect(action, &QAction::triggered, this, [this, size]() {
-            set_text_size(size);
-        });
-    }
-
-    // Get the toolbar button position
-    QToolBar *toolbar = nullptr;
-    for (QObject *child : children()) {
-        if (auto *tb = qobject_cast<QToolBar*>(child)) {
-            if (tb->windowTitle() == "Format") {
-                toolbar = tb;
-                break;
-            }
-        }
-    }
-
-    if (toolbar) {
-        // Find the last widget in toolbar to position menu near it
-        QWidget *lastWidget = nullptr;
-        QList<QAction*> actions = toolbar->actions();
-        if (!actions.isEmpty()) {
-            QAction *lastAction = actions.last();
-            QWidget *button = toolbar->widgetForAction(lastAction);
-            if (button) {
-                QPoint pos = button->mapToGlobal(QPoint(button->width(), button->height()));
-                size_menu.exec(pos);
-                return;
-            }
-        }
-        size_menu.exec(toolbar->mapToGlobal(QPoint(toolbar->width(), toolbar->height())));
-    } else {
-        size_menu.exec(QCursor::pos());
-    }
-}
-
 void main_window::setup_format_toolbar() {
     auto *toolbar = addToolBar("Format");
     toolbar->setIconSize(QSize(16, 16));
 
-    // Bold button with icon
     QAction *action_bold = toolbar->addAction(QIcon("data/images/bold.svg"), "Bold");
     action_bold->setToolTip("Bold (Ctrl+B)");
     action_bold->setCheckable(true);
@@ -241,7 +195,6 @@ void main_window::setup_format_toolbar() {
         editor->mergeCurrentCharFormat(fmt);
     });
 
-    // Italic button with icon
     QAction *action_italic = toolbar->addAction(QIcon("data/images/italic.svg"), "Italic");
     action_italic->setToolTip("Italic (Ctrl+I)");
     action_italic->setCheckable(true);
@@ -252,7 +205,6 @@ void main_window::setup_format_toolbar() {
         editor->mergeCurrentCharFormat(fmt);
     });
 
-    // Underline button with icon
     QAction *action_underline = toolbar->addAction(QIcon("data/images/underline.svg"), "Underline");
     action_underline->setToolTip("Underline (Ctrl+U)");
     action_underline->setCheckable(true);
@@ -263,13 +215,10 @@ void main_window::setup_format_toolbar() {
         editor->mergeCurrentCharFormat(fmt);
     });
 
-    // Separator
     toolbar->addSeparator();
 
-    // Color button with dropdown menu (with color icons)
     QMenu *color_menu = new QMenu(this);
 
-    // 8 preset colors with icons
     struct ColorItem {
         QString name;
         QColor color;
@@ -289,7 +238,6 @@ void main_window::setup_format_toolbar() {
     for (const auto &item: colors) {
         QAction *color_action_item = color_menu->addAction(item.name);
 
-        // Create colored icon (color box) for each menu item
         QPixmap pixmap(16, 16);
         pixmap.fill(item.color);
         color_action_item->setIcon(QIcon(pixmap));
@@ -304,7 +252,6 @@ void main_window::setup_format_toolbar() {
                 editor->setCurrentCharFormat(format);
             }
 
-            // Update the toolbar button icon to show selected color
             if (color_action) {
                 QPixmap color_pixmap(16, 16);
                 color_pixmap.fill(item.color);
@@ -313,10 +260,8 @@ void main_window::setup_format_toolbar() {
         });
     }
 
-    // Create toolbar button with dropdown
     color_action = new QAction(this);
 
-    // Set default icon (black square)
     QPixmap default_pixmap(16, 16);
     default_pixmap.fill(Qt::black);
     color_action->setIcon(QIcon(default_pixmap));
@@ -332,7 +277,6 @@ void main_window::setup_format_toolbar() {
 
     toolbar->addSeparator();
 
-    // Create alignment actions
     QAction *action_align_left = toolbar->addAction("⬅️");
     action_align_left->setToolTip("Align Left");
     action_align_left->setCheckable(true);
@@ -345,7 +289,6 @@ void main_window::setup_format_toolbar() {
     action_align_right->setToolTip("Align Right");
     action_align_right->setCheckable(true);
 
-    // Connect left align
     connect(action_align_left, &QAction::triggered, this,
             [this, action_align_left, action_align_center, action_align_right]() {
                 set_alignment_left();
@@ -354,7 +297,6 @@ void main_window::setup_format_toolbar() {
                 action_align_right->setChecked(false);
             });
 
-    // Connect center align
     connect(action_align_center, &QAction::triggered, this,
             [this, action_align_left, action_align_center, action_align_right]() {
                 set_alignment_center();
@@ -363,7 +305,6 @@ void main_window::setup_format_toolbar() {
                 action_align_right->setChecked(false);
             });
 
-    // Connect right align
     connect(action_align_right, &QAction::triggered, this,
             [this, action_align_left, action_align_center, action_align_right]() {
                 set_alignment_right();
@@ -373,7 +314,6 @@ void main_window::setup_format_toolbar() {
             });
     toolbar->addSeparator();
 
-    // Text Size button (shows current size)
     QAction *action_text_size = toolbar->addAction("12");
     action_text_size->setToolTip("Text Size");
 
@@ -381,13 +321,10 @@ void main_window::setup_format_toolbar() {
     size_button->setDefaultAction(action_text_size);
     size_button->setPopupMode(QToolButton::InstantPopup);
 
-    // Create size menu with sizes: 6, 8, 10, 12, 14, 16, 18
     QMenu *size_menu = new QMenu(this);
-
-    // Sizes: 6 + 2n, where n = 0 to 6
     int sizes[] = {6, 8, 10, 12, 14, 16, 18, 20};
 
-    for (int size : sizes) {
+    for (int size: sizes) {
         QAction *size_action = size_menu->addAction(QString::number(size));
         connect(size_action, &QAction::triggered, this, [this, size, action_text_size]() {
             set_text_size(size);
@@ -680,7 +617,6 @@ void main_window::show_context_menu(const QPoint &pos) {
         }
     }
 
-    // Default context menu
     QMenu default_menu(this);
 
     QAction *undo_action = default_menu.addAction("Undo");
