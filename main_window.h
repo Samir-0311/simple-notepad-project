@@ -14,6 +14,9 @@
 #include <QColor>
 #include <memory>
 #include <vector>
+#include <QPrinter>
+#include <QPrintDialog>
+#include <QPrintPreviewDialog>
 
 
 class spell_checker;
@@ -34,6 +37,8 @@ private slots:
     void show_context_menu(const QPoint& pos);
 
 private:
+    void print_document();
+
     void setup_file_menu();
     void setup_edit_menu();
     void setup_format_menu();

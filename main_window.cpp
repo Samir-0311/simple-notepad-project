@@ -26,6 +26,9 @@
 #include <QTextStream>
 #include <QToolBar>
 #include <QToolButton>
+#include <QPrinter>
+#include <QPrintDialog>
+#include <QPrintPreviewDialog>
 
 #include <algorithm>
 #include <map>
@@ -110,6 +113,12 @@ void main_window::setup_file_menu() {
 
     QAction *action_save_as = file_menu->addAction("Save As...");
     connect(action_save_as, &QAction::triggered, this, [this] { save_file_as(); });
+
+    file_menu->addSeparator();
+
+    QAction *action_print = file_menu->addAction("Print...");
+    action_print->setShortcut(QKeySequence::Print);
+    connect(action_print, &QAction::triggered, this, &main_window::print_document);
 
     file_menu->addSeparator();
 
@@ -429,6 +438,18 @@ void main_window::save_file_as() {
     current_file = path;
     save_file();
     update_title();
+}
+
+void main_window::print_document() {
+    QPrinter printer(QPrinter::HighResolution);
+
+    QPrintDialog dialog(&printer, this);
+    dialog.setWindowTitle("Print Document");
+
+    if (dialog.exec() == QPrintDialog::Accepted) {
+        editor->print(&printer);
+        QMessageBox::information(this, "Print", "Document sent to printer.");
+    }
 }
 
 void main_window::update_title() {
