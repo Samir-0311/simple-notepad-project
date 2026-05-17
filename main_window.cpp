@@ -5,16 +5,19 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QBrush>
 #include <QContextMenuEvent>
 #include <QDebug>
 #include <QFile>
 #include <QFileDialog>
 #include <QFont>
 #include <QHeaderView>
+#include <QIcon>
 #include <QKeySequence>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPixmap>
 #include <QRegularExpression>
 #include <QStatusBar>
 #include <QTableWidgetItem>
@@ -22,6 +25,7 @@
 #include <QTextDocument>
 #include <QTextStream>
 #include <QToolBar>
+#include <QToolButton>
 
 #include <algorithm>
 #include <map>
@@ -55,7 +59,7 @@ main_window::main_window() {
     };
 
     bool loaded = false;
-    for (const auto& path : paths) {
+    for (const auto &path: paths) {
         checker->load_dictionary(path);
         if (checker->is_correct("hello")) {
             loaded = true;
@@ -157,11 +161,78 @@ void main_window::setup_format_menu() {
     }
 }
 
+void main_window::set_alignment_left() {
+    editor->setAlignment(Qt::AlignLeft);
+}
+
+void main_window::set_alignment_center() {
+    editor->setAlignment(Qt::AlignCenter);
+}
+
+void main_window::set_alignment_right() {
+    editor->setAlignment(Qt::AlignRight);
+}
+
+void main_window::set_text_size(int size)
+{
+    QTextCharFormat format;
+    format.setFontPointSize(size);
+
+    if (editor->textCursor().hasSelection()) {
+        editor->textCursor().mergeCharFormat(format);
+    } else {
+        editor->setCurrentCharFormat(format);
+    }
+}
+
+void main_window::show_text_size_menu()
+{
+    QMenu size_menu;
+
+    for (int size = 1; size <= 10; ++size) {
+        QAction *action = size_menu.addAction(QString::number(size));
+        connect(action, &QAction::triggered, this, [this, size]() {
+            set_text_size(size);
+        });
+    }
+
+    // Get the toolbar button position
+    QToolBar *toolbar = nullptr;
+    for (QObject *child : children()) {
+        if (auto *tb = qobject_cast<QToolBar*>(child)) {
+            if (tb->windowTitle() == "Format") {
+                toolbar = tb;
+                break;
+            }
+        }
+    }
+
+    if (toolbar) {
+        // Find the last widget in toolbar to position menu near it
+        QWidget *lastWidget = nullptr;
+        QList<QAction*> actions = toolbar->actions();
+        if (!actions.isEmpty()) {
+            QAction *lastAction = actions.last();
+            QWidget *button = toolbar->widgetForAction(lastAction);
+            if (button) {
+                QPoint pos = button->mapToGlobal(QPoint(button->width(), button->height()));
+                size_menu.exec(pos);
+                return;
+            }
+        }
+        size_menu.exec(toolbar->mapToGlobal(QPoint(toolbar->width(), toolbar->height())));
+    } else {
+        size_menu.exec(QCursor::pos());
+    }
+}
+
 void main_window::setup_format_toolbar() {
     auto *toolbar = addToolBar("Format");
     toolbar->setIconSize(QSize(16, 16));
 
-    QAction *action_bold = toolbar->addAction("Bold");
+    // Bold button with icon
+    QAction *action_bold = toolbar->addAction(QIcon("data/images/bold.svg"), "Bold");
+    action_bold->setToolTip("Bold (Ctrl+B)");
     action_bold->setCheckable(true);
     action_bold->setShortcut(QKeySequence("Ctrl+B"));
     connect(action_bold, &QAction::triggered, this, [this](bool checked) {
@@ -170,7 +241,9 @@ void main_window::setup_format_toolbar() {
         editor->mergeCurrentCharFormat(fmt);
     });
 
-    QAction *action_italic = toolbar->addAction("Italic");
+    // Italic button with icon
+    QAction *action_italic = toolbar->addAction(QIcon("data/images/italic.svg"), "Italic");
+    action_italic->setToolTip("Italic (Ctrl+I)");
     action_italic->setCheckable(true);
     action_italic->setShortcut(QKeySequence("Ctrl+I"));
     connect(action_italic, &QAction::triggered, this, [this](bool checked) {
@@ -179,7 +252,9 @@ void main_window::setup_format_toolbar() {
         editor->mergeCurrentCharFormat(fmt);
     });
 
-    QAction *action_underline = toolbar->addAction("Underline");
+    // Underline button with icon
+    QAction *action_underline = toolbar->addAction(QIcon("data/images/underline.svg"), "Underline");
+    action_underline->setToolTip("Underline (Ctrl+U)");
     action_underline->setCheckable(true);
     action_underline->setShortcut(QKeySequence("Ctrl+U"));
     connect(action_underline, &QAction::triggered, this, [this](bool checked) {
@@ -188,12 +263,140 @@ void main_window::setup_format_toolbar() {
         editor->mergeCurrentCharFormat(fmt);
     });
 
-    connect(editor, &QTextEdit::currentCharFormatChanged,
-            this, [action_bold, action_italic, action_underline](const QTextCharFormat &fmt) {
-                action_bold->setChecked(fmt.fontWeight() == QFont::Bold);
-                action_italic->setChecked(fmt.fontItalic());
-                action_underline->setChecked(fmt.fontUnderline());
+    // Separator
+    toolbar->addSeparator();
+
+    // Color button with dropdown menu (with color icons)
+    QMenu *color_menu = new QMenu(this);
+
+    // 8 preset colors with icons
+    struct ColorItem {
+        QString name;
+        QColor color;
+    };
+
+    QVector<ColorItem> colors = {
+        {"Black", Qt::black},
+        {"Red", Qt::red},
+        {"Blue", Qt::blue},
+        {"Green", Qt::green},
+        {"Orange", QColor(255, 165, 0)},
+        {"Purple", QColor(128, 0, 128)},
+        {"Brown", QColor(139, 69, 19)},
+        {"Cyan", Qt::cyan}
+    };
+
+    for (const auto &item: colors) {
+        QAction *color_action_item = color_menu->addAction(item.name);
+
+        // Create colored icon (color box) for each menu item
+        QPixmap pixmap(16, 16);
+        pixmap.fill(item.color);
+        color_action_item->setIcon(QIcon(pixmap));
+
+        connect(color_action_item, &QAction::triggered, this, [this, item]() {
+            QTextCharFormat format;
+            format.setForeground(QBrush(item.color));
+
+            if (editor->textCursor().hasSelection()) {
+                editor->textCursor().mergeCharFormat(format);
+            } else {
+                editor->setCurrentCharFormat(format);
+            }
+
+            // Update the toolbar button icon to show selected color
+            if (color_action) {
+                QPixmap color_pixmap(16, 16);
+                color_pixmap.fill(item.color);
+                color_action->setIcon(QIcon(color_pixmap));
+            }
+        });
+    }
+
+    // Create toolbar button with dropdown
+    color_action = new QAction(this);
+
+    // Set default icon (black square)
+    QPixmap default_pixmap(16, 16);
+    default_pixmap.fill(Qt::black);
+    color_action->setIcon(QIcon(default_pixmap));
+    color_action->setToolTip("Text Color");
+
+    QToolButton *color_button = new QToolButton(this);
+    color_button->setDefaultAction(color_action);
+    color_button->setPopupMode(QToolButton::InstantPopup);
+    color_button->setMenu(color_menu);
+    color_button->setIconSize(QSize(16, 16));
+
+    toolbar->addWidget(color_button);
+
+    toolbar->addSeparator();
+
+    // Create alignment actions
+    QAction *action_align_left = toolbar->addAction("⬅️");
+    action_align_left->setToolTip("Align Left");
+    action_align_left->setCheckable(true);
+
+    QAction *action_align_center = toolbar->addAction("⬌");
+    action_align_center->setToolTip("Center");
+    action_align_center->setCheckable(true);
+
+    QAction *action_align_right = toolbar->addAction("➡️");
+    action_align_right->setToolTip("Align Right");
+    action_align_right->setCheckable(true);
+
+    // Connect left align
+    connect(action_align_left, &QAction::triggered, this,
+            [this, action_align_left, action_align_center, action_align_right]() {
+                set_alignment_left();
+                action_align_left->setChecked(true);
+                action_align_center->setChecked(false);
+                action_align_right->setChecked(false);
             });
+
+    // Connect center align
+    connect(action_align_center, &QAction::triggered, this,
+            [this, action_align_left, action_align_center, action_align_right]() {
+                set_alignment_center();
+                action_align_left->setChecked(false);
+                action_align_center->setChecked(true);
+                action_align_right->setChecked(false);
+            });
+
+    // Connect right align
+    connect(action_align_right, &QAction::triggered, this,
+            [this, action_align_left, action_align_center, action_align_right]() {
+                set_alignment_right();
+                action_align_left->setChecked(false);
+                action_align_center->setChecked(false);
+                action_align_right->setChecked(true);
+            });
+    toolbar->addSeparator();
+
+    // Text Size button (shows current size)
+    QAction *action_text_size = toolbar->addAction("12");
+    action_text_size->setToolTip("Text Size");
+
+    QToolButton *size_button = new QToolButton(this);
+    size_button->setDefaultAction(action_text_size);
+    size_button->setPopupMode(QToolButton::InstantPopup);
+
+    // Create size menu with sizes: 6, 8, 10, 12, 14, 16, 18
+    QMenu *size_menu = new QMenu(this);
+
+    // Sizes: 6 + 2n, where n = 0 to 6
+    int sizes[] = {6, 8, 10, 12, 14, 16, 18, 20};
+
+    for (int size : sizes) {
+        QAction *size_action = size_menu->addAction(QString::number(size));
+        connect(size_action, &QAction::triggered, this, [this, size, action_text_size]() {
+            set_text_size(size);
+            action_text_size->setText(QString::number(size));
+        });
+    }
+
+    size_button->setMenu(size_menu);
+    toolbar->addWidget(size_button);
 }
 
 void main_window::setup_search_menu() {
@@ -221,7 +424,7 @@ void main_window::setup_tools_menu() {
         if (checker) {
             checker->rehighlight_all();
             QMessageBox::information(this, "Spell Check",
-                "Spell check completed. Misspelled words are underlined in red.");
+                                     "Spell check completed. Misspelled words are underlined in red.");
         }
     });
 }
@@ -300,14 +503,14 @@ void main_window::update_word_and_line_count() {
     QString text = editor->toPlainText();
 
     int line_count = 0;
-    for (QChar ch : text) {
+    for (QChar ch: text) {
         if (ch == '\n') line_count++;
     }
     if (!text.isEmpty() && !text.endsWith('\n')) line_count++;
 
     int word_count = 0;
     bool in_word = false;
-    for (QChar ch : text) {
+    for (QChar ch: text) {
         if (ch.isLetterOrNumber()) {
             if (!in_word) {
                 word_count++;
@@ -424,13 +627,13 @@ void main_window::show_word_frequency() {
 
     while (stream >> word) {
         word.erase(std::remove_if(word.begin(), word.end(),
-            [](unsigned char c) { return !std::isalpha(c); }), word.end());
+                                  [](unsigned char c) { return !std::isalpha(c); }), word.end());
         if (!word.empty()) {
             freq[word]++;
         }
     }
 
-    std::vector<std::pair<std::string, int>> sorted_freq(freq.begin(), freq.end());
+    std::vector<std::pair<std::string, int> > sorted_freq(freq.begin(), freq.end());
     std::sort(sorted_freq.begin(), sorted_freq.end(),
               [](const auto &a, const auto &b) { return a.second > b.second; });
 
@@ -466,7 +669,7 @@ void main_window::show_context_menu(const QPoint &pos) {
 
         if (!suggestions.isEmpty()) {
             QMenu menu(this);
-            for (const QString &suggestion : suggestions) {
+            for (const QString &suggestion: suggestions) {
                 QAction *action = menu.addAction(suggestion);
                 connect(action, &QAction::triggered, [this, suggestion, cursor]() {
                     replace_word(suggestion, cursor);

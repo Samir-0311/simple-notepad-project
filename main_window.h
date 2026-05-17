@@ -4,13 +4,17 @@
 #include "text_transform.h"
 #include "notepad_exception.h"
 
+#include <QAction>
+#include <QToolButton>
 #include <QDialog>
 #include <QMainWindow>
 #include <QString>
 #include <QTextDocument>
 #include <QTextEdit>
+#include <QColor>
 #include <memory>
 #include <vector>
+
 
 class spell_checker;
 
@@ -38,6 +42,13 @@ private:
     void setup_tools_menu();
     void setup_status_bar();
 
+    void set_alignment_left();
+    void set_alignment_center();
+    void set_alignment_right();
+
+    void set_text_size(int size);
+    void show_text_size_menu();
+
     void open_file();
     void save_file();
     void save_file_as();
@@ -63,6 +74,9 @@ private:
     std::unique_ptr<Ui::find_replace_dialog> find_replace_ui;
 
     spell_checker *checker{nullptr};
+
+    // Color button
+    QAction *color_action{nullptr};
 };
 
 #endif // MAIN_WINDOW_H
