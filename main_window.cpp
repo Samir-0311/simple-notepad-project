@@ -343,11 +343,27 @@ void main_window::setup_format_toolbar() {
     for (int size: sizes) {
         QAction *size_action = size_menu->addAction(QString::number(size));
         connect(size_action, &QAction::triggered, this, [this, size, action_text_size]() {
-            set_text_size(size);
+            QTextCursor cursor = editor->textCursor();
+
+            QTextCharFormat currentFormat;
+            if (cursor.hasSelection()) {
+                currentFormat = cursor.charFormat();
+            } else {
+                currentFormat = editor->currentCharFormat();
+            }
+
+            QTextCharFormat newFormat = currentFormat;
+            newFormat.setFontPointSize(size);
+
+            if (cursor.hasSelection()) {
+                cursor.mergeCharFormat(newFormat);
+            } else {
+                editor->setCurrentCharFormat(newFormat);
+            }
+
             action_text_size->setText(QString::number(size));
         });
     }
-
     size_button->setMenu(size_menu);
     toolbar->addWidget(size_button);
 }
