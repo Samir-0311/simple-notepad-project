@@ -59,7 +59,7 @@ main_window::main_window() {
         "C:/Users/samir/CLionProjects/simple-notepad-project/data/words.txt"
     };
 
-    for (const auto& path : paths) {
+    for (const auto &path: paths) {
         checker->load_dictionary(path);
         if (checker->getDictionarySize() > 10000) {
             break;
@@ -682,7 +682,6 @@ void main_window::show_context_menu(const QPoint &pos) {
     if (!selected_word.isEmpty() && checker && !checker->is_correct_qstring(selected_word)) {
         QStringList suggestions = checker->suggestions_qstring(selected_word, 5);
 
-        // Limit to max 5 suggestions
         if (suggestions.size() > 5) {
             suggestions = suggestions.mid(0, 5);
         }
