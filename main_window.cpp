@@ -59,18 +59,11 @@ main_window::main_window() {
         "C:/Users/samir/CLionProjects/simple-notepad-project/data/words.txt"
     };
 
-    bool loaded = false;
-    for (const auto &path: paths) {
+    for (const auto& path : paths) {
         checker->load_dictionary(path);
-        if (checker->is_correct("hello")) {
-            loaded = true;
-            qDebug() << "Dictionary loaded from:" << path.c_str();
+        if (checker->getDictionarySize() > 10000) {
             break;
         }
-    }
-
-    if (!loaded) {
-        qDebug() << "Failed to load dictionary from any path";
     }
 
     editor->setContextMenuPolicy(Qt::CustomContextMenu);

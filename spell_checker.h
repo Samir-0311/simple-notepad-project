@@ -15,7 +15,7 @@ class spell_checker : public QSyntaxHighlighter {
 
 public:
     explicit spell_checker(QTextDocument* parent = nullptr);
-
+    int getDictionarySize() const { return dictionary.size(); }
     void load_dictionary(const std::string& path);
 
     [[nodiscard]] bool is_correct(const std::string& word) const;

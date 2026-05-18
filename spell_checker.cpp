@@ -35,7 +35,6 @@ void spell_checker::load_dictionary(const std::string& path)
     }
 
     file.close();
-    qDebug() << "Loaded" << count << "words from dictionary";
 }
 
 std::string spell_checker::normalize(const std::string& word)
