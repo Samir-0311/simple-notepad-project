@@ -53,9 +53,6 @@ main_window::main_window() {
     checker = new spell_checker(editor->document());
 
     std::vector<std::string> paths = {
-        "data/words.txt",
-        "../data/words.txt",
-        "../../data/words.txt",
         "C:/Users/samir/CLionProjects/simple-notepad-project/data/words.txt"
     };
 
