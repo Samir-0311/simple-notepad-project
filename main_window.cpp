@@ -255,13 +255,17 @@ void main_window::setup_format_toolbar() {
         color_action_item->setIcon(QIcon(pixmap));
 
         connect(color_action_item, &QAction::triggered, this, [this, item]() {
-            QTextCharFormat format;
-            format.setForeground(QBrush(item.color));
+            QTextCursor cursor = editor->textCursor();
 
-            if (editor->textCursor().hasSelection()) {
-                editor->textCursor().mergeCharFormat(format);
+            QTextCharFormat currentFormat = cursor.hasSelection() ? cursor.charFormat() : editor->currentCharFormat();
+
+            QTextCharFormat newFormat = currentFormat;
+            newFormat.setForeground(QBrush(item.color));
+
+            if (cursor.hasSelection()) {
+                cursor.mergeCharFormat(newFormat);
             } else {
-                editor->setCurrentCharFormat(format);
+                editor->setCurrentCharFormat(newFormat);
             }
 
             if (color_action) {
